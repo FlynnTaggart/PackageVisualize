@@ -36,8 +36,11 @@ def get_requirements(package_name: str):
                     if meta_data.find('METADATA') != -1)[0]).readlines()
                     if line.decode().find('Requires-Dist:') != -1 and line.decode().find('extra ==') == -1):
         req_name = re.match(r'Requires-Dist:\s[\w\-.]+', dist.decode()).group().split()[1]
-        dependency_dict[package_name].append(req_name)
-        get_requirements(req_name)
+        # if req_name in dependency_dict[package_name]:
+        #     print(req_name)
+        if req_name not in dependency_dict[package_name]:
+            dependency_dict[package_name].append(req_name)
+            get_requirements(req_name)
     file.close()
 
 
