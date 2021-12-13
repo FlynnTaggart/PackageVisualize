@@ -5,20 +5,48 @@ import requests
 import zipfile
 from bs4 import BeautifulSoup
 
-page = requests.get('https://pypi.org/simple/' + sys.argv[1])
+core_package = sys.argv[1]
 
-data = page.text
-soup = BeautifulSoup(data, features='html.parser')
+dependency_dict = dict()
 
-last_ver = None
 
-for link in soup.find_all('a'):
-    if '.whl' in link.get('href'):
-        last_ver = link.get('href')
+def get_requirements(package_name: str):
+    if not package_name in dependency_dict:
+        dependency_dict[package_name] = []
+    else:
+        return
+    page = requests.get('https://pypi.org/simple/' + package_name)
 
-r = requests.get(last_ver).content
-file = zipfile.ZipFile(io.BytesIO(r))
+    data = page.text
+    soup = BeautifulSoup(data, features='html.parser')
 
-for dist in list(line for line in file.open(list(meta_data for meta_data in file.namelist()
-        if meta_data.find('METADATA') != -1)[0]).readlines() if line.decode().find('Requires-Dist:') != -1):
-    print(re.match(r'Requires-Dist:\s[\w\-.]+', dist.decode()).group().split()[1])
+    last_ver = None
+
+    for link in soup.find_all('a'):
+        if '.whl' in link.get('href'):
+            last_ver = link.get('href')
+    if last_ver is None:
+        return
+    r = requests.get(last_ver).content
+    file = zipfile.ZipFile(io.BytesIO(r))
+
+    for dist in list(line for line in file.open(list(meta_data for meta_data in file.namelist()
+                    if meta_data.find('METADATA') != -1)[0]).readlines()
+                    if line.decode().find('Requires-Dist:') != -1 and line.decode().find('extra ==') == -1):
+        req_name = re.match(r'Requires-Dist:\s[\w\-.]+', dist.decode()).group().split()[1]
+        dependency_dict[package_name].append(req_name)
+        get_requirements(req_name)
+    file.close()
+
+
+def make_graphviz_code(dep_dict: dict):
+    edge_list = 'digraph G {\n'
+    for parent in dep_dict:
+        for dep in dep_dict[parent]:
+            edge_list += '\t"' + parent + '" -> "' + dep + '";\n'
+    edge_list += '}'
+    return edge_list
+
+
+get_requirements(core_package)
+print(make_graphviz_code(dependency_dict))
