@@ -3,6 +3,8 @@ import re
 import sys
 import requests
 import zipfile
+import webbrowser
+from urllib import parse
 from bs4 import BeautifulSoup
 
 core_package = sys.argv[1]
@@ -49,4 +51,6 @@ def make_graphviz_code(dep_dict: dict):
 
 
 get_requirements(core_package)
-print(make_graphviz_code(dependency_dict))
+code = make_graphviz_code(dependency_dict)
+print(code)
+webbrowser.open('https://dreampuf.github.io/GraphvizOnline/#' + parse.quote(code), new=2)
