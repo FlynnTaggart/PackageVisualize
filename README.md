@@ -5,7 +5,7 @@ It will also try to open Graphviz editor in broser with generated code.
 # Setup
 1. Install requirements:
 
-`pip install requirements.txt`
+`pip install -r requirements.txt`
 
 2. Run PackageVisualize:
 
